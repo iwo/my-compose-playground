@@ -5,67 +5,81 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sandbox.compose.ui.theme.ComposeSandboxTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val stateFlow = MutableStateFlow(UiState(title = Title("Title"), counter = 1))
-
-        lifecycleScope.launch {
-            while (true) {
-                delay(20L)
-                stateFlow.value = stateFlow.value.let { it.copy(counter = it.counter + 1) }
-            }
-        }
         setContent {
-            val state by stateFlow.collectAsState()
+            val viewModel: MainViewModel = viewModel()
+            val state by viewModel.uiState.collectAsState(UiState())
             ComposeSandboxTheme {
-                ScreenContent(state)
+                ScreenContent(state, onUiAction = viewModel::onUiAction)
             }
         }
     }
 }
 
-data class UiState(
-    val title: Title,
-    val counter: Int,
-)
+@Composable
+fun ScreenContent(state: UiState, onUiAction: (UiAction) -> Unit) {
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Column(modifier = Modifier
+            .padding(innerPadding)
+            .padding(16.dp)) {
+            CounterContent(counter = state.restlessUpdate)
+            InputSection(editableValue = state.editableValue, onUiAction = onUiAction)
+            SluggishResponseSection(response = state.sluggishResponse)
+        }
+    }
+}
 
-data class Title(val text: String, val externalData: ExternalData = ExternalData(""))
-
-class ExternalData(var data: String)
 
 @Composable
-fun ScreenContent(state: UiState) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            TitleHeader(title = state.title)
-            CounterContent(counter = state.counter)
+fun InputSection(editableValue: Float, onUiAction: (UiAction) -> Unit) {
+    Column {
+        Slider(value = editableValue, onValueChange = {
+            onUiAction(UiAction.UpdateEditableValue(it))
+        })
+        Button(onClick = { onUiAction(UiAction.MakeSluggishRequest)}) {
+            Text(text = "Make a sluggish request")
         }
     }
 }
 
 @Composable
-fun TitleHeader(title: Title) {
-    Text(text = title.text)
+fun SluggishResponseSection(response: String?) {
+    Row (verticalAlignment = Alignment.CenterVertically){
+        Text(text = "Sluggish response:", modifier = Modifier.padding(vertical = 16.dp))
+        if (response == null) {
+            CircularProgressIndicator()
+        } else {
+            Text(text = response)
+        }
+    }
 }
 
 @Composable
 fun CounterContent(counter: Int) {
-    Text(text = "Counter value $counter")
+    Row {
+        Text(text = "Restless updates:")
+        Text(text = "$counter")
+    }
 }
