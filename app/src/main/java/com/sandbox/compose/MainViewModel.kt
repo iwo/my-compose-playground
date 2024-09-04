@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -29,8 +28,10 @@ sealed interface UiAction {
 
 class MainViewModel : ViewModel() {
 
-    private val restlessRepository = RestlessRepository()
-    private val sluggishProcessor = SluggishProcessor()
+    // In the real app this would be injected by DI
+    private val restlessRepository: RestlessRepository = RestlessRepositoryImpl()
+    private val sluggishProcessor:SluggishProcessor = SluggishProcessorImpl()
+
     private val editableValueFlow = MutableStateFlow(0f)
 
     val uiState: Flow<UiState> = combine(
